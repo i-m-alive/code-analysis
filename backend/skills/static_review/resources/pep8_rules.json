@@ -1,0 +1,9 @@
+{
+  "max_line_length": 250,
+  "indent_size": 4,
+  "max_function_lines": 50,
+  "max_parameters": 5,
+  "max_nesting_depth": 4,
+  "trailing_whitespace": false,
+  "tabs_allowed": false
+}

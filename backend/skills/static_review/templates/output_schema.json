@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "required": ["issues"],
+  "properties": {
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "line", "issue", "recommendation"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["info", "low", "medium", "high", "critical"]
+          },
+          "line": { "type": "string" },
+          "issue": { "type": "string" },
+          "recommendation": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["correctness", "security", "maintainability", "performance", "style"]
+          }
+        }
+      }
+    }
+  }
+}

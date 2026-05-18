@@ -1,0 +1,23 @@
+{
+  "python": {
+    "function": "^[a-z_][a-z0-9_]*$",
+    "class": "^[A-Z][A-Za-z0-9]*$",
+    "constant": "^[A-Z][A-Z0-9_]*$",
+    "variable": "^[a-z_][a-z0-9_]*$",
+    "min_identifier_length": 2,
+    "forbidden_names": ["foo", "bar", "baz", "tmp", "data1", "x1"],
+    "allowed_short_names": [
+      "_", "i", "j", "k", "n", "m", "r", "s", "t", "x", "y", "z",
+      "e", "f", "g", "p", "c", "v", "q", "id", "db", "ok"
+    ]
+  },
+  "javascript": {
+    "function": "^[a-z_$][A-Za-z0-9_$]*$",
+    "class": "^[A-Z][A-Za-z0-9]*$",
+    "constant": "^[A-Z][A-Z0-9_]*$",
+    "variable": "^[a-z_$][A-Za-z0-9_$]*$",
+    "min_identifier_length": 2,
+    "forbidden_names": ["foo", "bar", "baz", "tmp"],
+    "allowed_short_names": ["_", "i", "j", "k", "n", "x", "y", "e", "id"]
+  }
+}
