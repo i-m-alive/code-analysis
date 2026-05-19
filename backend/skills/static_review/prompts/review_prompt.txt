@@ -7,26 +7,48 @@ You will receive:
 
 YOUR JOB
 - Keep every deterministic finding unchanged.
-- Add AT MOST 3 additional issues the scripts may have missed.
-- Only add issues of severity MEDIUM, HIGH or CRITICAL. Skip nits and style.
+- Add AT MOST 3 additional issues the scripts missed.
+- Only add issues of severity MEDIUM, HIGH or CRITICAL. Skip nits.
 - Verify each line number falls strictly within {start_line}-{end_line}.
-  If you cannot ground a finding to a specific line, do not report it.
-- In `issue`, include a brief backtick-quoted snippet from the offending line
-  so the reader can locate it without scrolling.
-- Set `category` to one of: correctness, security, maintainability, performance, style.
+  If you cannot ground a finding to a specific line, do NOT report it.
+- In `issue`, include a brief backtick-quoted snippet of the offending line.
+  The quoted text MUST appear verbatim in the CODE block below — if you
+  can't quote it, you don't have evidence and you should not report it.
+- Set `category` to one of: correctness, security, maintainability,
+  performance, style.
+- Set `confidence` to an integer 0-100 indicating how certain you are:
+    * 95-100 — you can quote the exact offending line and explain why
+    * 75-94  — likely real, depends on interpretation
+    * 0-74   — speculative; DO NOT include findings at this confidence
 
-HARD RULES — IMPORTANT
-- Respond ONLY with valid JSON. No prose, no markdown fences, no commentary.
-- Never claim a symbol is "not defined" / "undefined" without first scanning the
-  CODE block for that exact name. If the name appears anywhere in CODE, do not
-  flag it as undefined.
-- Never report defensive code that is already present:
-    * `value or 0`, `value or []`, `value or {{}}`
-    * `if not X: return ...`
-    * `X.isoformat() if X else None`
-    * `float(X or 0)`, `int(X or 0)`, `bool(X)`
-- Do NOT flag the literals `0`, `1`, `-1`, `0.0`, `1.0`, `True`, `False`, `None`
-  as magic numbers. They are sensible defaults.
+HARD RULES — VIOLATING THESE WILL CAUSE YOUR FINDING TO BE REJECTED:
+
+1. NEVER write any of these phrases. They are all hallucination patterns:
+   - "does not handle ..."  /  "doesn't handle ..."
+   - "X is not initialized" / "X not used after ..."
+   - "X is not provided" / "X are not provided"
+   - "fails to handle ..."
+   - "missing docstring" / "missing type hint"
+   - "X should be used instead of X" (tautological)
+
+2. NEVER claim a variable or symbol is "unused", "not used", or "undefined".
+   These claims are reliably wrong on small models. Skip them entirely.
+
+3. NEVER report defensive code that is ALREADY PRESENT in the chunk:
+   - `value or 0`, `value or []`, `value or {{}}`
+   - `if not X: return ...`
+   - `X.isoformat() if X else None`
+   - `float(X or 0)`, `int(X or 0)`, `bool(X)`
+
+4. NEVER flag the literals 0, 1, -1, 0.0, 1.0, True, False, None as
+   "magic numbers". They are sensible defaults.
+
+5. NEVER report findings that duplicate a DETERMINISTIC FINDING. Read the
+   provided deterministic findings first; if your finding overlaps with one
+   of them, skip it.
+
+6. NEVER fabricate code that isn't in the CODE block. Every backtick-quoted
+   snippet you include MUST appear in the chunk verbatim.
 
 INPUTS
 - LANGUAGE: {language}

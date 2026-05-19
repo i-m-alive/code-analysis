@@ -14,6 +14,7 @@ import FileUploader from "./components/FileUploader";
 import FindingsTable from "./components/FindingsTable";
 import HealthBanner from "./components/HealthBanner";
 import Header from "./components/Header";
+import ScoreCard from "./components/ScoreCard";
 import Selectors from "./components/Selectors";
 
 function extractError(e) {
@@ -36,6 +37,7 @@ export default function App() {
   const [skillId, setSkillId] = useState("");
   const [uploaded, setUploaded] = useState([]);
   const [results, setResults] = useState([]);
+  const [scoring, setScoring] = useState(null);
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
   const [health, setHealth] = useState(null);
@@ -105,6 +107,7 @@ export default function App() {
       });
       const list = res.results || [];
       setResults(list);
+      setScoring(res.scoring || null);
       setSelectedChunkId(list[0]?.chunk_id || "");
       if (list.length === 0) {
         setError(
@@ -182,6 +185,7 @@ export default function App() {
       {results.length > 0 && (
         <ResultsSection
           results={results}
+          scoring={scoring}
           selectedChunkId={selectedChunkId}
           onSelect={setSelectedChunkId}
         />
@@ -190,15 +194,18 @@ export default function App() {
   );
 }
 
-function ResultsSection({ results, selectedChunkId, onSelect }) {
+function ResultsSection({ results, scoring, selectedChunkId, onSelect }) {
   const selected = results.find((r) => r.chunk_id === selectedChunkId) || results[0];
 
   return (
     <section>
       <h2>Review results</h2>
 
+      <ScoreCard scoring={scoring} />
+
       <Dashboard
         results={results}
+        scoring={scoring}
         skill={results[0]?.skill}
         selectedChunkId={selectedChunkId}
         onSelectChunk={onSelect}

@@ -23,6 +23,12 @@ class Issue(BaseModel):
         default=None,
         description="correctness | security | maintainability | performance | style",
     )
+    confidence: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="SLM self-confidence 0-100 (only present on SLM findings)",
+    )
 
 
 class ChunkReview(BaseModel):
@@ -57,8 +63,37 @@ class UploadedFile(BaseModel):
     language: str
 
 
+class TopIssue(BaseModel):
+    issue: str
+    count: int
+
+
+class AspectScore(BaseModel):
+    name: str = Field(..., description="correctness | security | maintainability | performance | style")
+    weight: float
+    score: float = Field(..., ge=0, le=100)
+    grade: str
+    issue_count: int
+    severity_breakdown: dict
+    top_issues: List[TopIssue] = []
+    annotation: str
+
+
+class OverallScore(BaseModel):
+    score: float = Field(..., ge=0, le=100)
+    grade: str
+    annotation: str
+
+
+class Scoring(BaseModel):
+    overall: OverallScore
+    aspects: List[AspectScore]
+    metadata: dict
+
+
 class AnalyzeResponse(BaseModel):
     model: str
     chunking_strategy: str
     skill: str
     results: List[ChunkReview]
+    scoring: Optional[Scoring] = None

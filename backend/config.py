@@ -39,32 +39,61 @@ OLLAMA_TIMEOUT_SECONDS = 600  # 10 minutes per chunk (CPU inference can be slow)
 # locally via `ollama pull <id>` before it can run. The /ollama/health
 # endpoint reports which are actually present.
 SUPPORTED_MODELS = [
+    # --- 1-2B class (fast, low accuracy — useful for prompt iteration) ---
     {
         "id": "qwen2.5-coder:1.5b",
-        "label": "Qwen2.5-Coder 1.5B Instruct",
+        "label": "Qwen2.5-Coder 1.5B (fast, lower accuracy)",
         "huggingface": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+        "size_class": "small",
+        "recommended": False,
         "active": True,
     },
     {
         "id": "deepseek-coder:1.3b",
-        "label": "DeepSeek Coder 1.3B Instruct",
+        "label": "DeepSeek Coder 1.3B (fast, lower accuracy)",
         "huggingface": "deepseek-ai/deepseek-coder-1.3b-instruct",
+        "size_class": "small",
+        "recommended": False,
         "active": False,
     },
+    # --- 3-4B class (balanced) ---
     {
         "id": "starcoder2:3b",
         "label": "StarCoder2 3B",
         "huggingface": "bigcode/starcoder2-3b",
+        "size_class": "medium",
+        "recommended": False,
         "active": False,
     },
     {
         "id": "phi3:mini",
-        "label": "Phi-3 Mini 4K Instruct",
+        "label": "Phi-3 Mini 4K",
         "huggingface": "microsoft/Phi-3-mini-4k-instruct",
+        "size_class": "medium",
+        "recommended": False,
+        "active": False,
+    },
+    # --- 6-7B class (recommended for serious benchmarking) ---
+    {
+        "id": "qwen2.5-coder:7b",
+        "label": "Qwen2.5-Coder 7B (recommended for accuracy)",
+        "huggingface": "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "size_class": "large",
+        "recommended": True,
+        "active": False,
+    },
+    {
+        "id": "deepseek-coder:6.7b",
+        "label": "DeepSeek Coder 6.7B (recommended for accuracy)",
+        "huggingface": "deepseek-ai/deepseek-coder-6.7b-instruct",
+        "size_class": "large",
+        "recommended": True,
         "active": False,
     },
 ]
 
+# Active by default. Switching to a 7B model gives a sizeable jump in
+# instruction-following and reduces SLM-noise dramatically — see README.
 ACTIVE_MODEL_ID = "qwen2.5-coder:1.5b"
 
 

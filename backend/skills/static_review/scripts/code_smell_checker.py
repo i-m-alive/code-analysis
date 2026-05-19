@@ -53,18 +53,35 @@ def _collect_main_guard_lines(tree: ast.AST) -> Set[int]:
     return lines
 
 
+# Methods/functions whose presence in an `except` body means the developer
+# *is* doing something with the error — even if it isn't logging per se.
+# We split them into three buckets to keep the intent obvious.
+_LOG_METHODS = {"error", "exception", "warning", "critical", "warn", "info", "debug"}
+_CLEANUP_METHODS = {"rollback", "close", "commit", "abort", "shutdown", "cleanup"}
+_NOTIFY_METHODS = {"emit", "report", "notify", "track", "capture"}
+
+
 def _has_log_or_reraise(handler: ast.ExceptHandler) -> bool:
-    log_methods = {"error", "exception", "warning", "critical", "warn", "info", "debug"}
+    """True if the except body re-raises, logs, cleans up, or notifies."""
     for inner in ast.walk(handler):
         if isinstance(inner, ast.Raise):
             return True
         if isinstance(inner, ast.Call):
             func = inner.func
-            if isinstance(func, ast.Attribute) and func.attr in log_methods:
-                return True
-            if isinstance(func, ast.Name) and func.id == "print":
-                # `print` in an except is poor but at least surfaces the error.
-                return True
+            # Attribute call (e.g. `logger.error()`, `db.rollback()`).
+            if isinstance(func, ast.Attribute):
+                if func.attr in _LOG_METHODS:
+                    return True
+                if func.attr in _CLEANUP_METHODS:
+                    return True
+                if func.attr in _NOTIFY_METHODS:
+                    return True
+            # Bare name call (e.g. `print(...)`, `logging.exception(...)`).
+            if isinstance(func, ast.Name):
+                if func.id == "print":
+                    return True
+                if func.id in _LOG_METHODS:
+                    return True
     return False
 
 

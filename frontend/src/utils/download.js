@@ -48,7 +48,7 @@ function chunkTail(chunkId) {
     : chunkId;
 }
 
-export function downloadJSON(results) {
+export function downloadJSON(results, scoring) {
   const meta = results[0] || {};
   const { counts, totalIssues } = summarize(results);
   const payload = {
@@ -59,6 +59,7 @@ export function downloadJSON(results) {
     chunk_count: results.length,
     issue_count: totalIssues,
     severity_breakdown: counts,
+    scoring: scoring || null,
     results,
   };
   triggerDownload(
@@ -68,7 +69,7 @@ export function downloadJSON(results) {
   );
 }
 
-export function downloadMarkdown(results) {
+export function downloadMarkdown(results, scoring) {
   const meta = results[0] || {};
   const { counts, totalIssues } = summarize(results);
   const lines = [];
@@ -82,6 +83,28 @@ export function downloadMarkdown(results) {
   lines.push(`- **Chunks reviewed:** ${results.length}`);
   lines.push(`- **Issues total:** ${totalIssues}`);
   lines.push("");
+
+  if (scoring && scoring.overall) {
+    lines.push("## Code Quality Score");
+    lines.push("");
+    lines.push(
+      `### Overall: **${scoring.overall.grade}** (${scoring.overall.score.toFixed(1)}/100)`
+    );
+    lines.push("");
+    lines.push(`> ${scoring.overall.annotation}`);
+    lines.push("");
+    lines.push("| Aspect | Grade | Score | Weight | Issues | Annotation |");
+    lines.push("|---|---|---|---|---|---|");
+    for (const a of scoring.aspects || []) {
+      const annot = String(a.annotation || "").replace(/\|/g, "\\|");
+      lines.push(
+        `| ${a.name} | **${a.grade}** | ${a.score.toFixed(1)}/100 | ` +
+          `${(a.weight * 100).toFixed(0)}% | ${a.issue_count} | ${annot} |`
+      );
+    }
+    lines.push("");
+  }
+
   lines.push("## Severity breakdown");
   for (const sev of SEVERITY_ORDER) {
     lines.push(`- **${sev}:** ${counts[sev]}`);

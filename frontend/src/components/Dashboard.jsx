@@ -49,6 +49,8 @@ function computeStats(results) {
   let chunksWithIssues = 0;
   let chunksWithHigh = 0;
   let hasCategory = false;
+  let confidenceSum = 0;
+  let confidenceCount = 0;
 
   for (const r of results) {
     let chunkHigh = false;
@@ -72,6 +74,11 @@ function computeStats(results) {
       const catKey = categoryCounts[cat] !== undefined ? cat : "uncategorized";
       categoryCounts[catKey] += 1;
       if (issue.category) hasCategory = true;
+
+      if (typeof issue.confidence === "number") {
+        confidenceSum += issue.confidence;
+        confidenceCount += 1;
+      }
 
       const key = (issue.issue || "").toLowerCase().slice(0, 60).trim();
       if (key) issueGroups[key] = (issueGroups[key] || 0) + 1;
@@ -111,6 +118,9 @@ function computeStats(results) {
     topIssues,
     perChunk,
     hasCategory,
+    avgConfidence:
+      confidenceCount > 0 ? Math.round(confidenceSum / confidenceCount) : null,
+    confidenceCount,
   };
 }
 
@@ -157,6 +167,7 @@ function KpiTile({ value, label, tone }) {
 
 export default function Dashboard({
   results,
+  scoring,
   skill,
   selectedChunkId,
   onSelectChunk,
@@ -179,10 +190,10 @@ export default function Dashboard({
           </span>
         </div>
         <div className="ura-dashboard-actions">
-          <button onClick={() => downloadJSON(results)} title="Download full results as JSON">
+          <button onClick={() => downloadJSON(results, scoring)} title="Download full results as JSON">
             ⬇ JSON
           </button>
-          <button onClick={() => downloadMarkdown(results)} title="Download human-readable Markdown report">
+          <button onClick={() => downloadMarkdown(results, scoring)} title="Download human-readable Markdown report">
             ⬇ Markdown
           </button>
         </div>
@@ -207,6 +218,19 @@ export default function Dashboard({
           label="Chunks w/ High+"
           tone={stats.chunksWithHigh > 0 ? "danger" : "good"}
         />
+        {stats.avgConfidence !== null && (
+          <KpiTile
+            value={`${stats.avgConfidence}`}
+            label={`Avg SLM confidence (${stats.confidenceCount})`}
+            tone={
+              stats.avgConfidence >= 85
+                ? "good"
+                : stats.avgConfidence < 70
+                ? "danger"
+                : "default"
+            }
+          />
+        )}
       </div>
 
       {/* Row 2 — distribution panels */}

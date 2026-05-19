@@ -23,7 +23,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from config import SKILLS_DIR
 
@@ -38,6 +38,10 @@ class LoadedSkill:
     output_schema: dict
     resources: dict = field(default_factory=dict)
     scripts: List["LoadedScript"] = field(default_factory=list)
+    # Optional deterministic scorer. If the skill folder has a top-level
+    # `scoring.py` exposing `run(results, resources) -> dict`, it's loaded
+    # here and called by the agent after all chunks have been reviewed.
+    scoring: Optional[Callable] = None
 
 
 @dataclass
@@ -109,6 +113,15 @@ def load_skill(skill_name: str) -> LoadedSkill:
         f"and respond ONLY with JSON conforming to the provided schema."
     )
 
+    # Optional scorer — top-level scoring.py exposing run(results, resources).
+    scoring_fn: Optional[Callable] = None
+    scoring_file = skill_path / "scoring.py"
+    if scoring_file.exists():
+        scoring_module = _load_module(scoring_file)
+        candidate = getattr(scoring_module, "run", None)
+        if callable(candidate):
+            scoring_fn = candidate
+
     return LoadedSkill(
         name=skill_name,
         path=skill_path,
@@ -118,6 +131,7 @@ def load_skill(skill_name: str) -> LoadedSkill:
         output_schema=output_schema,
         resources=resources,
         scripts=scripts,
+        scoring=scoring_fn,
     )
 
 

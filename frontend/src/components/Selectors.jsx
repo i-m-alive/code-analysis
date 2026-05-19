@@ -19,11 +19,15 @@ export default function Selectors({
             value={modelId}
             onChange={(e) => onModelChange(e.target.value)}
           >
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label} — {m.id} {m.installed ? "✓ installed" : "(not pulled)"}
-              </option>
-            ))}
+            {models.map((m) => {
+              const rec = m.recommended ? " ★" : "";
+              const status = m.installed ? "✓ installed" : "(not pulled)";
+              return (
+                <option key={m.id} value={m.id}>
+                  {m.label}{rec} — {m.id} {status}
+                </option>
+              );
+            })}
           </select>
         </label>
 

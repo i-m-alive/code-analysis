@@ -96,9 +96,14 @@ def analyze(request: AnalyzeRequest) -> dict:
         elapsed,
     )
 
+    # Aggregate scoring across all chunks (per-skill scorer; no-op if the
+    # skill doesn't ship a scoring.py).
+    scoring = agent.compute_scoring(results)
+
     return {
         "model": model_id,
         "chunking_strategy": chunking_strategy,
         "skill": skill_name,
         "results": results,
+        "scoring": scoring,
     }

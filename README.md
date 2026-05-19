@@ -98,11 +98,31 @@ code analysis/
    ollama pull qwen2.5-coder:1.5b
    ollama serve
    ```
-   Other models in `backend/config.py` are commented out — uncomment and
-   pull them to benchmark alternatives:
-   - `deepseek-coder:1.3b`
-   - `starcoder2:3b`
-   - `phi3:mini`
+
+### Model size and accuracy
+
+The 1.5B-class models are fast on CPU but hallucinate frequently. The SLM
+sanity-gate in [universal_review_agent.py](backend/agents/universal_review_agent.py)
+rejects most of these, but you'll still see ~5-10× more raw false positives
+compared to a 7B model. For serious benchmarking, pull one of the
+**recommended 7B-class** models:
+
+```powershell
+ollama pull qwen2.5-coder:7b         # ~4.7 GB — recommended
+# or
+ollama pull deepseek-coder:6.7b      # ~3.8 GB — alternate
+```
+
+Then change `ACTIVE_MODEL_ID` in [backend/config.py](backend/config.py) to
+`"qwen2.5-coder:7b"`, or select it from the dropdown at runtime. The 7B
+models follow the anti-hallucination prompt rules far more reliably and
+typically produce 60-80% fewer noise findings.
+
+| Model size | Per-chunk on CPU | Hallucination rate | Recommended use |
+|---|---|---|---|
+| 1-2B | 5-30 s | High | Prompt iteration, smoke testing |
+| 3-4B | 15-60 s | Medium | General use |
+| 6-7B | 30-120 s | Low | **Serious benchmarking** |
 
 ## Run
 

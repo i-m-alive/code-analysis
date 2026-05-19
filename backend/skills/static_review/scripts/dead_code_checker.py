@@ -74,13 +74,22 @@ def run(chunk: dict, resources: dict) -> List[dict]:
                     "Remove the loop",
                 ))
         if isinstance(node, ast.ExceptHandler):
-            # An empty except: body is usually a bug, not dead code, but
-            # a `pass`-only handler that swallows errors is worth flagging.
-            if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
+            # A `pass`-only handler silently swallows errors. We intentionally
+            # only flag NARROW excepts here — broad `except Exception:` /
+            # bare `except:` are owned by code_smell_checker (at higher
+            # severity), and we don't want to double-flag the same line.
+            is_broad = (
+                node.type is None
+                or (
+                    isinstance(node.type, ast.Name)
+                    and node.type.id in ("Exception", "BaseException")
+                )
+            )
+            if not is_broad and len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
                 line = start_line + node.lineno - 1
                 out.append(_finding(
                     "info", line,
-                    "Empty except handler swallows errors silently",
-                    "At minimum log the exception, or narrow the except clause",
+                    "Empty except handler silently swallows errors",
+                    "At minimum log the exception",
                 ))
     return out

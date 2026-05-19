@@ -6,7 +6,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["severity", "line", "issue", "recommendation"],
+        "required": ["severity", "line", "issue", "recommendation", "confidence"],
         "properties": {
           "severity": {
             "type": "string",
@@ -18,6 +18,12 @@
           "category": {
             "type": "string",
             "enum": ["correctness", "security", "maintainability", "performance", "style"]
+          },
+          "confidence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "How sure you are this finding is real. 95+=certain, 75-94=likely, <70=do NOT report."
           }
         }
       }

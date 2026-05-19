@@ -33,7 +33,9 @@ export default function FindingsTable({ result }) {
               <th>Line</th>
               <th>Issue</th>
               <th>Recommendation</th>
+              <th>Category</th>
               <th>Source</th>
+              <th>Conf.</th>
             </tr>
           </thead>
           <tbody>
@@ -47,7 +49,11 @@ export default function FindingsTable({ result }) {
                 <td>{i.line}</td>
                 <td>{i.issue}</td>
                 <td>{i.recommendation}</td>
+                <td className="muted">{i.category || "—"}</td>
                 <td className="muted">{i.source || "—"}</td>
+                <td className="muted">
+                  {typeof i.confidence === "number" ? `${i.confidence}` : "—"}
+                </td>
               </tr>
             ))}
           </tbody>

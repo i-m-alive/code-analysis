@@ -6,7 +6,9 @@ for the chunk. Flags chunks that exceed the PEP8-rules thresholds.
 """
 
 import ast
+import io
 import re
+import tokenize
 from typing import List
 
 _BRANCH_NODES = (
@@ -60,6 +62,89 @@ def _cyclomatic_generic(code: str) -> int:
     return 1 + len(keywords)
 
 
+def _effective_line_count(code: str, language: str) -> int:
+    """
+    Count "real" code lines, excluding:
+    - Blank lines
+    - Comment-only lines
+    - Standalone docstring/string-statement lines
+
+    For Python we use `tokenize` for accuracy. For other languages we fall
+    back to a simple heuristic (blank + `//` / `#` comment skipping).
+    """
+    if language == "python":
+        try:
+            return _effective_lines_python(code)
+        except Exception:
+            pass
+
+    count = 0
+    in_block_comment = False
+    for raw in code.splitlines():
+        stripped = raw.strip()
+        if not stripped:
+            continue
+        # Very rough multi-line comment handling for C-like langs.
+        if in_block_comment:
+            if "*/" in stripped:
+                in_block_comment = False
+            continue
+        if stripped.startswith("/*"):
+            if "*/" not in stripped[2:]:
+                in_block_comment = True
+            continue
+        if stripped.startswith(("#", "//")):
+            continue
+        count += 1
+    return count
+
+
+def _effective_lines_python(code: str) -> int:
+    """
+    Python-specific: count lines that contain at least one token that is
+    NOT a comment, NL, NEWLINE, INDENT, DEDENT, ENCODING, ENDMARKER,
+    or a standalone string-statement (docstring).
+    """
+    significant_lines: set[int] = set()
+    string_only_lines: set[int] = set()
+    other_token_lines: set[int] = set()
+    skip_types = {
+        tokenize.COMMENT,
+        tokenize.NL,
+        tokenize.NEWLINE,
+        tokenize.INDENT,
+        tokenize.DEDENT,
+        tokenize.ENCODING,
+        tokenize.ENDMARKER,
+    }
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(code).readline))
+    except (tokenize.TokenizeError, IndentationError):
+        # Fall back to raw line count if tokenization fails.
+        return len([l for l in code.splitlines() if l.strip()])
+
+    for tok in tokens:
+        if tok.type in skip_types:
+            continue
+        start_row = tok.start[0]
+        end_row = tok.end[0]
+        if tok.type == tokenize.STRING:
+            for row in range(start_row, end_row + 1):
+                string_only_lines.add(row)
+        else:
+            for row in range(start_row, end_row + 1):
+                other_token_lines.add(row)
+
+    # A line with both STRING and other tokens is "real code" (e.g. `x = "hi"`).
+    # A line with ONLY STRING tokens is likely a docstring — exclude it.
+    significant_lines = other_token_lines | (
+        # strings paired with non-strings on same line are already in other_token_lines;
+        # nothing else to add.
+        set()
+    )
+    return len(significant_lines)
+
+
 def _finding(severity: str, line: int, issue: str, recommendation: str) -> dict:
     return {
         "severity": severity,
@@ -79,6 +164,7 @@ def run(chunk: dict, resources: dict) -> List[dict]:
     start_line = int(chunk.get("start_line", 1))
     end_line = int(chunk.get("end_line", start_line))
     chunk_lines = max(1, end_line - start_line + 1)
+    effective_lines = _effective_line_count(code, language) or chunk_lines
 
     out: List[dict] = []
 
@@ -108,10 +194,13 @@ def run(chunk: dict, resources: dict) -> List[dict]:
             "Split this function into smaller, single-purpose helpers",
         ))
 
-    if chunk_lines > max_lines:
+    # Use "effective" line count (excluding blanks, comments, docstrings) so
+    # well-documented but reasonably-sized functions aren't penalized.
+    if effective_lines > max_lines:
         out.append(_finding(
             "medium", start_line,
-            f"Function is too long ({chunk_lines} lines, max {max_lines})",
+            (f"Function is too long ({effective_lines} effective lines, "
+             f"{chunk_lines} total, max {max_lines})"),
             "Break this function into smaller cohesive pieces",
         ))
 
