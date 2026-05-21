@@ -15,7 +15,7 @@ import { downloadJSON, downloadMarkdown } from "../utils/download";
  */
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"];
-const SOURCE_ORDER = ["deterministic", "slm", "other"];
+const SOURCE_ORDER = ["deterministic", "llm", "slm", "other"];
 const CATEGORY_ORDER = [
   "correctness",
   "security",
@@ -27,7 +27,7 @@ const CATEGORY_ORDER = [
 
 function computeStats(results) {
   const severityCounts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
-  const sourceCounts = { deterministic: 0, slm: 0, other: 0 };
+  const sourceCounts = { deterministic: 0, llm: 0, slm: 0, other: 0 };
   const categoryCounts = {
     correctness: 0,
     security: 0,
@@ -38,6 +38,7 @@ function computeStats(results) {
   };
   const sevBySource = {
     deterministic: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+    llm: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
     slm: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
     other: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
   };
@@ -221,7 +222,7 @@ export default function Dashboard({
         {stats.avgConfidence !== null && (
           <KpiTile
             value={`${stats.avgConfidence}`}
-            label={`Avg SLM confidence (${stats.confidenceCount})`}
+            label={`Avg model confidence (${stats.confidenceCount})`}
             tone={
               stats.avgConfidence >= 85
                 ? "good"

@@ -6,7 +6,12 @@ Only ONE chunking strategy is active initially.
 All other options are kept as commented configuration for benchmarking.
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Use absolute path so .env loads regardless of where uvicorn is launched from.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -21,6 +26,15 @@ SKILLS_DIR = BASE_DIR / "skills"
 # (whose Windows path-separator handling is fragile).
 UPLOAD_DIR = BASE_DIR.parent / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# AWS Bedrock runtime
+# ---------------------------------------------------------------------------
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+# Set BEDROCK_MODEL_ID in your environment to the model you want to use,
+# e.g. "anthropic.claude-3-5-sonnet-20241022-v2:0"
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "REPLACE_WITH_YOUR_BEDROCK_MODEL_ID")
 
 
 # ---------------------------------------------------------------------------
@@ -39,6 +53,15 @@ OLLAMA_TIMEOUT_SECONDS = 600  # 10 minutes per chunk (CPU inference can be slow)
 # locally via `ollama pull <id>` before it can run. The /ollama/health
 # endpoint reports which are actually present.
 SUPPORTED_MODELS = [
+    # --- AWS Bedrock (cloud, always available when credentials are set) ---
+    {
+        "id": BEDROCK_MODEL_ID,
+        "label": "AWS Bedrock (cloud)",
+        "provider": "bedrock",
+        "size_class": "cloud",
+        "recommended": True,
+        "active": True,
+    },
     # --- 1-2B class (fast, low accuracy — useful for prompt iteration) ---
     {
         "id": "qwen2.5-coder:1.5b",
@@ -94,7 +117,7 @@ SUPPORTED_MODELS = [
 
 # Active by default. Switching to a 7B model gives a sizeable jump in
 # instruction-following and reduces SLM-noise dramatically — see README.
-ACTIVE_MODEL_ID = "qwen2.5-coder:1.5b"
+ACTIVE_MODEL_ID = BEDROCK_MODEL_ID
 
 
 # ---------------------------------------------------------------------------

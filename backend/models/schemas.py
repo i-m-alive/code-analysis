@@ -17,7 +17,7 @@ class Issue(BaseModel):
     recommendation: str = Field(..., description="How to fix it")
     source: Optional[str] = Field(
         default=None,
-        description="Origin of the finding: 'deterministic' or 'slm'",
+        description="Origin of the finding: 'deterministic', 'slm' (Ollama), or 'llm' (Bedrock)",
     )
     category: Optional[str] = Field(
         default=None,
@@ -27,7 +27,7 @@ class Issue(BaseModel):
         default=None,
         ge=0,
         le=100,
-        description="SLM self-confidence 0-100 (only present on SLM findings)",
+        description="Model self-confidence 0-100 (present on SLM/LLM findings)",
     )
 
 
