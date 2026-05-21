@@ -4,7 +4,7 @@ export default function Header({ activeModel, activeStrategy, activeSkill }) {
       <div>
         <h1>Universal Review Agent</h1>
         <p className="ura-subtitle">
-          Local SLM-powered, skill-based static code review.
+          AI-powered, skill-based static code review.
         </p>
       </div>
       <div className="ura-active-meta">

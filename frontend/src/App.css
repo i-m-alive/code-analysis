@@ -594,6 +594,7 @@ details summary {
 .ura-bar-sev-info     { background: #94a3b8; }
 
 .ura-bar-src-deterministic { background: #5b8dff; color: #fff; }
+.ura-bar-src-llm           { background: #10b981; color: #fff; }
 .ura-bar-src-slm           { background: #a855f7; color: #fff; }
 .ura-bar-src-other         { background: #94a3b8; }
 

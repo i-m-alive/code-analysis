@@ -24,7 +24,12 @@ from dataclasses import asdict
 from typing import List, Optional, Tuple
 
 from chunking.base import CodeChunk
-from llm.ollama_client import OllamaError, generate, safe_json_extract
+from llm.bedrock_client import BedrockError
+from llm.bedrock_client import generate as bedrock_generate
+from llm.ollama_client import OllamaError
+from llm.ollama_client import generate as ollama_generate
+from llm.ollama_client import safe_json_extract
+from config import SUPPORTED_MODELS
 from skill_loader.loader import LoadedSkill, load_skill
 
 logger = logging.getLogger("ura.agent")
@@ -165,34 +170,52 @@ class UniversalReviewAgent:
             output_schema=json.dumps(self.skill.output_schema, indent=2),
         )
 
+    @staticmethod
+    def _get_provider(model_id: str) -> str:
+        for m in SUPPORTED_MODELS:
+            if m["id"] == model_id:
+                return m.get("provider", "ollama")
+        return "ollama"
+
     def _call_slm(self, model_id: str, prompt: str) -> List[dict]:
-        logger.info("    calling SLM '%s' (prompt: %d chars)...", model_id, len(prompt))
+        logger.info("    calling LLM '%s' (prompt: %d chars)...", model_id, len(prompt))
         start = time.perf_counter()
+        provider = self._get_provider(model_id)
+        source_label = "llm" if provider == "bedrock" else "slm"
+        model_label  = "LLM" if provider == "bedrock" else "SLM"
         try:
-            raw = generate(model_id, prompt, system=self.skill.system_prompt)
-        except OllamaError as exc:
+            if provider == "bedrock":
+                raw = bedrock_generate(model_id, prompt, system=self.skill.system_prompt)
+            else:
+                raw = ollama_generate(model_id, prompt, system=self.skill.system_prompt)
+        except (OllamaError, BedrockError) as exc:
             elapsed = time.perf_counter() - start
-            logger.warning("    SLM call failed after %.2fs: %s", elapsed, exc)
+            logger.warning("    %s call failed after %.2fs: %s", model_label, elapsed, exc)
+            hint = (
+                "Check your AWS credentials and BEDROCK_MODEL_ID env var."
+                if provider == "bedrock"
+                else "Ensure Ollama is running and the model is pulled."
+            )
             return [{
                 "severity": "info",
                 "line": "1",
-                "issue": f"SLM call failed: {exc}",
-                "recommendation": "Ensure Ollama is running and the model is pulled.",
-                "source": "slm",
+                "issue": f"{model_label} call failed: {exc}",
+                "recommendation": hint,
+                "source": source_label,
             }]
 
         elapsed = time.perf_counter() - start
-        logger.info("    SLM responded in %.2fs (%d chars)", elapsed, len(raw or ""))
+        logger.info("    %s responded in %.2fs (%d chars)", model_label, elapsed, len(raw or ""))
 
         parsed = safe_json_extract(raw)
         if not parsed:
-            logger.warning("    SLM returned non-JSON output")
+            logger.warning("    %s returned non-JSON output", model_label)
             return [{
                 "severity": "info",
                 "line": "1",
-                "issue": "SLM returned non-JSON output",
+                "issue": f"{model_label} returned non-JSON output",
                 "recommendation": "Inspect the raw response or try a stronger model.",
-                "source": "slm",
+                "source": source_label,
             }]
 
         if isinstance(parsed, dict) and isinstance(parsed.get("issues"), list):
@@ -219,9 +242,9 @@ class UniversalReviewAgent:
                 "category": (str(item.get("category")).lower()
                              if item.get("category") else None),
                 "confidence": confidence,
-                "source": "slm",
+                "source": source_label,
             })
-        logger.info("    SLM: %d finding(s)", len(cleaned))
+        logger.info("    %s: %d finding(s)", model_label, len(cleaned))
         return cleaned
 
     # -------------------------------------------------------------------
@@ -421,6 +444,9 @@ class UniversalReviewAgent:
         chunk_dict = asdict(chunk)
         deterministic = self._run_deterministic(chunk_dict)
         prompt = self._build_prompt(chunk_dict, deterministic)
+        provider = self._get_provider(model_id)
+        model_label = "LLM" if provider == "bedrock" else "SLM"
+
         slm_findings = self._call_slm(model_id, prompt)
         raw_slm_count = len(slm_findings)
 
@@ -431,8 +457,8 @@ class UniversalReviewAgent:
         if rejected_total > 0:
             reject_summary = ", ".join(f"{k}={v}" for k, v in reject_stats.items() if v)
             logger.info(
-                "    sanity filter dropped %d SLM finding(s) [%s]",
-                rejected_total, reject_summary,
+                "    sanity filter dropped %d %s finding(s) [%s]",
+                rejected_total, model_label, reject_summary,
             )
 
         issues = self._merge(deterministic, slm_findings)

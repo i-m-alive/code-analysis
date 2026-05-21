@@ -1,12 +1,28 @@
 export default function HealthBanner({ health, activeModel }) {
   if (!health) return null;
 
+  const isBedrock = health.active_model_provider === "bedrock";
+
+  if (isBedrock) {
+    return health.active_model_pulled ? (
+      <div className="ura-banner ura-banner-ok">
+        AWS Bedrock is configured and ready.
+      </div>
+    ) : (
+      <div className="ura-banner ura-banner-warn">
+        <strong>AWS Bedrock credentials not found.</strong>{" "}
+        Set <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>,
+        and <code>BEDROCK_MODEL_ID</code> in your <code>.env</code> file and restart the server.
+      </div>
+    );
+  }
+
   if (!health.reachable) {
     return (
       <div className="ura-banner ura-banner-error">
         <strong>Ollama is not running.</strong>{" "}
         Start it in another terminal with <code>ollama serve</code>. The Run
-        button will still produce deterministic findings, but no SLM reasoning.
+        button will still produce deterministic findings, but no model reasoning.
       </div>
     );
   }
