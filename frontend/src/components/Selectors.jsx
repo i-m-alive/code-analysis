@@ -20,11 +20,14 @@ export default function Selectors({
             onChange={(e) => onModelChange(e.target.value)}
           >
             {models.map((m) => {
-              const rec = m.recommended ? " ★" : "";
-              const status = m.installed ? "✓ installed" : "(not pulled)";
+              const rec = m.recommended ? " *" : "";
+              const status =
+                m.provider === "bedrock"
+                  ? (m.installed ? "configured" : "not configured")
+                  : (m.installed ? "installed" : "not pulled");
               return (
                 <option key={m.id} value={m.id}>
-                  {m.label}{rec} — {m.id} {status}
+                  {m.label}{rec} - {m.id} ({status})
                 </option>
               );
             })}

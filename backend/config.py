@@ -31,10 +31,13 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # ---------------------------------------------------------------------------
 # AWS Bedrock runtime
 # ---------------------------------------------------------------------------
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1").strip()
 # Set BEDROCK_MODEL_ID in your environment to the model you want to use,
 # e.g. "anthropic.claude-3-5-sonnet-20241022-v2:0"
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "REPLACE_WITH_YOUR_BEDROCK_MODEL_ID")
+BEDROCK_MODEL_ID = os.getenv(
+    "BEDROCK_MODEL_ID",
+    "REPLACE_WITH_YOUR_BEDROCK_MODEL_ID",
+).strip()
 
 
 # ---------------------------------------------------------------------------

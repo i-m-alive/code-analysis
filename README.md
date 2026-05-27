@@ -3,9 +3,10 @@
 Local AI-powered source code review system for benchmarking small language
 models (SLMs), chunking strategies, and static-review capabilities.
 
-This is a **single-agent**, skill-based architecture. There is no
-multi-agent orchestration, no MCP server, no LangGraph / CrewAI / AutoGen,
-no vector DB, and no embeddings.
+This is a **single-agent**, skill-based architecture implemented with
+**LangGraph** for workflow orchestration and **LangChain** model adapters for
+Ollama / AWS Bedrock. There is still no multi-agent system, MCP server, vector
+DB, or embeddings.
 
 ## Architecture
 
@@ -29,7 +30,13 @@ Static Review Skill
     ├── Resources             (pep8_rules.json, naming_rules.json)
     └── Templates             (output_schema.json)
             ↓
-SLM Inference             (Ollama → Qwen2.5-Coder 1.5B)
+LangGraph Review Workflow
+    ├── deterministic_review
+    ├── build_prompt
+    ├── llm_review          (LangChain → Ollama / AWS Bedrock)
+    ├── sanity_filter
+    ├── merge_findings
+    └── package_result
             ↓
 Structured Findings (JSON)
             ↓
@@ -53,7 +60,8 @@ code analysis/
 │   │   ├── fixed_chunker.py           # commented
 │   │   ├── class_chunker.py           # commented
 │   │   └── semantic_chunker.py        # commented
-│   ├── llm/ollama_client.py
+│   ├── llm/langchain_client.py       # LangChain model adapter
+│   ├── llm/ollama_client.py          # health checks + JSON helper
 │   ├── skill_loader/loader.py
 │   ├── routers/
 │   │   ├── upload.py
@@ -199,15 +207,17 @@ Frontend runs on `http://localhost:5173` and proxies `/api/*` to the backend.
 ## Design rules
 
 1. Deterministic scripts produce **measurable** findings.
-2. The SLM only adds **reasoning, prioritization and human-friendly recommendations**.
+2. The SLM/LLM only adds **reasoning, prioritization and human-friendly recommendations**.
 3. Skills are loaded **dynamically by folder name**. The agent has zero
    hardcoded knowledge of static review, security review, etc.
 4. **Only function chunking** is active. Other strategies are scaffolded
    but commented in `chunking/__init__.py` for benchmark switching.
 5. **Only one model is active at a time.** Switch by changing
    `ACTIVE_MODEL_ID` in `backend/config.py`.
-6. No databases, vector DBs, RAG, embeddings, LangChain, MCP, or multi-agent
-   orchestration. Everything runs locally.
+6. LangGraph coordinates the per-chunk review stages, while deterministic
+   scripts and skill loading remain filesystem-based and provider-neutral.
+7. No databases, vector DBs, RAG, embeddings, MCP, or multi-agent
+   orchestration. Everything can still run locally with Ollama.
 
 ## Adding a new skill
 

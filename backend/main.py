@@ -29,8 +29,9 @@ from routers import analyze, chunking, models, ollama, skills, upload  # noqa: E
 app = FastAPI(
     title="Universal Review Agent",
     description=(
-        "Local AI-powered source code review system using SLMs via Ollama. "
-        "Skill-based, modular, single-agent architecture."
+        "Local AI-powered source code review system using LangGraph "
+        "orchestration and LangChain model adapters. Skill-based, modular, "
+        "single-agent architecture."
     ),
     version="0.1.0",
 )

@@ -6,7 +6,7 @@ A SINGLE agent (not multi-agent) that:
 1. Loads a skill dynamically by name.
 2. Runs every deterministic script in that skill against a chunk.
 3. Builds a prompt from the skill's prompt template + deterministic findings.
-4. Calls the active SLM via Ollama.
+4. Calls the active SLM/LLM via LangChain (Ollama or AWS Bedrock).
 5. Sanitizes the SLM output through a sanity-gate (line range, phrase blacklist,
    unused-var verification, code-quote verification, confidence threshold,
    "X is not defined" hallucination check, bogus magic-number rejection).
@@ -21,13 +21,13 @@ import logging
 import re
 import time
 from dataclasses import asdict
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TypedDict
+
+from langgraph.graph import END, START, StateGraph
 
 from chunking.base import CodeChunk
-from llm.bedrock_client import BedrockError
-from llm.bedrock_client import generate as bedrock_generate
-from llm.ollama_client import OllamaError
-from llm.ollama_client import generate as ollama_generate
+from llm.langchain_client import LangChainLLMError
+from llm.langchain_client import generate as langchain_generate
 from llm.ollama_client import safe_json_extract
 from config import SUPPORTED_MODELS
 from skill_loader.loader import LoadedSkill, load_skill
@@ -36,7 +36,7 @@ logger = logging.getLogger("ura.agent")
 
 
 # ---------------------------------------------------------------------------
-# SLM sanity-gate constants
+# SLM/LLM sanity-gate constants
 # ---------------------------------------------------------------------------
 
 # Common defaults the SLM tends to flag as "magic numbers" — they aren't.
@@ -118,17 +118,138 @@ def _word_occurrences(name: str, code: str) -> int:
 
 
 # ---------------------------------------------------------------------------
+# LangGraph state
+# ---------------------------------------------------------------------------
+
+class ReviewState(TypedDict, total=False):
+    chunk: CodeChunk
+    chunk_dict: dict
+    model_id: str
+    file_name: str
+    chunking_strategy: str
+    started_at: float
+    deterministic: List[dict]
+    prompt: str
+    provider: str
+    model_label: str
+    slm_findings: List[dict]
+    raw_slm_count: int
+    reject_stats: dict
+    issues: List[dict]
+    result: dict
+
+
+# ---------------------------------------------------------------------------
 # Agent
 # ---------------------------------------------------------------------------
 
 class UniversalReviewAgent:
     def __init__(self, skill_name: str):
         self.skill: LoadedSkill = load_skill(skill_name)
+        self._disabled_models: dict[tuple[str, str], str] = {}
+        self.graph = self._build_graph()
         logger.info(
-            "Loaded skill '%s' | %d deterministic script(s)",
+            "Loaded skill '%s' | %d deterministic script(s) | LangGraph ready",
             self.skill.name,
             len(self.skill.scripts),
         )
+
+    # -------------------------------------------------------------------
+    # LangGraph workflow
+    # -------------------------------------------------------------------
+    def _build_graph(self):
+        graph = StateGraph(ReviewState)
+        graph.add_node("deterministic_review", self._graph_deterministic_review)
+        graph.add_node("build_prompt", self._graph_build_prompt)
+        graph.add_node("llm_review", self._graph_llm_review)
+        graph.add_node("sanity_filter", self._graph_sanity_filter)
+        graph.add_node("merge_findings", self._graph_merge_findings)
+        graph.add_node("package_result", self._graph_package_result)
+
+        graph.add_edge(START, "deterministic_review")
+        graph.add_edge("deterministic_review", "build_prompt")
+        graph.add_edge("build_prompt", "llm_review")
+        graph.add_edge("llm_review", "sanity_filter")
+        graph.add_edge("sanity_filter", "merge_findings")
+        graph.add_edge("merge_findings", "package_result")
+        graph.add_edge("package_result", END)
+        return graph.compile()
+
+    def _graph_deterministic_review(self, state: ReviewState) -> ReviewState:
+        chunk_dict = asdict(state["chunk"])
+        return {
+            "chunk_dict": chunk_dict,
+            "deterministic": self._run_deterministic(chunk_dict),
+        }
+
+    def _graph_build_prompt(self, state: ReviewState) -> ReviewState:
+        model_id = state["model_id"]
+        provider = self._get_provider(model_id)
+        return {
+            "prompt": self._build_prompt(state["chunk_dict"], state["deterministic"]),
+            "provider": provider,
+            "model_label": "LLM" if provider == "bedrock" else "SLM",
+        }
+
+    def _graph_llm_review(self, state: ReviewState) -> ReviewState:
+        slm_findings = self._call_slm(
+            state["model_id"],
+            state["prompt"],
+            state["provider"],
+            state["chunk"].start_line,
+        )
+        return {
+            "slm_findings": slm_findings,
+            "raw_slm_count": len(slm_findings),
+        }
+
+    def _graph_sanity_filter(self, state: ReviewState) -> ReviewState:
+        chunk = state["chunk"]
+        slm_findings, reject_stats = self._filter_slm_findings(
+            state["slm_findings"],
+            chunk.start_line,
+            chunk.end_line,
+            chunk.code,
+        )
+        rejected_total = state["raw_slm_count"] - len(slm_findings)
+        if rejected_total > 0:
+            reject_summary = ", ".join(f"{k}={v}" for k, v in reject_stats.items() if v)
+            logger.info(
+                "    sanity filter dropped %d %s finding(s) [%s]",
+                rejected_total,
+                state["model_label"],
+                reject_summary,
+            )
+        return {"slm_findings": slm_findings, "reject_stats": reject_stats}
+
+    def _graph_merge_findings(self, state: ReviewState) -> ReviewState:
+        return {
+            "issues": self._merge(state["deterministic"], state["slm_findings"])
+        }
+
+    def _graph_package_result(self, state: ReviewState) -> ReviewState:
+        chunk = state["chunk"]
+        issues = state["issues"]
+        logger.info(
+            "    merged: %d total (chunk took %.2fs)",
+            len(issues),
+            time.perf_counter() - state["started_at"],
+        )
+        return {
+            "result": {
+                "file_name": state["file_name"],
+                "chunk_id": chunk.chunk_id,
+                "chunk_type": chunk.chunk_type,
+                "language": chunk.language,
+                "start_line": chunk.start_line,
+                "end_line": chunk.end_line,
+                "code": chunk.code,
+                "model": state["model_id"],
+                "chunking_strategy": state["chunking_strategy"],
+                "skill": self.skill.name,
+                "issues": issues,
+            }
+        }
 
     # -------------------------------------------------------------------
     # Deterministic stage
@@ -156,7 +277,7 @@ class UniversalReviewAgent:
         return findings
 
     # -------------------------------------------------------------------
-    # SLM stage
+    # LangChain LLM stage
     # -------------------------------------------------------------------
     def _build_prompt(self, chunk_dict: dict, deterministic: List[dict]) -> str:
         template = self.skill.prompt_template
@@ -172,33 +293,56 @@ class UniversalReviewAgent:
 
     @staticmethod
     def _get_provider(model_id: str) -> str:
+        model_id = model_id.strip()
         for m in SUPPORTED_MODELS:
             if m["id"] == model_id:
                 return m.get("provider", "ollama")
         return "ollama"
 
-    def _call_slm(self, model_id: str, prompt: str) -> List[dict]:
-        logger.info("    calling LLM '%s' (prompt: %d chars)...", model_id, len(prompt))
-        start = time.perf_counter()
-        provider = self._get_provider(model_id)
+    def _call_slm(
+        self,
+        model_id: str,
+        prompt: str,
+        provider: str,
+        chunk_start_line: int,
+    ) -> List[dict]:
+        model_id = model_id.strip()
         source_label = "llm" if provider == "bedrock" else "slm"
-        model_label  = "LLM" if provider == "bedrock" else "SLM"
+        model_label = "LLM" if provider == "bedrock" else "SLM"
+        disabled_key = (provider, model_id)
+        disabled_reason = self._disabled_models.get(disabled_key)
+        if disabled_reason:
+            logger.info(
+                "    skipping %s '%s' after earlier failure: %s",
+                model_label,
+                model_id,
+                disabled_reason,
+            )
+            return []
+
+        logger.info("    calling %s '%s' (prompt: %d chars)...", model_label, model_id, len(prompt))
+        start = time.perf_counter()
         try:
-            if provider == "bedrock":
-                raw = bedrock_generate(model_id, prompt, system=self.skill.system_prompt)
-            else:
-                raw = ollama_generate(model_id, prompt, system=self.skill.system_prompt)
-        except (OllamaError, BedrockError) as exc:
+            raw = langchain_generate(
+                model_id=model_id,
+                prompt=prompt,
+                provider=provider,
+                system=self.skill.system_prompt,
+            )
+        except LangChainLLMError as exc:
             elapsed = time.perf_counter() - start
             logger.warning("    %s call failed after %.2fs: %s", model_label, elapsed, exc)
+            self._disabled_models[disabled_key] = str(exc)
             hint = (
-                "Check your AWS credentials and BEDROCK_MODEL_ID env var."
+                "AWS rejected the Bedrock request. Check BEDROCK_MODEL_ID, "
+                "model access in the configured region, and IAM permissions "
+                "for Bedrock Converse/InvokeModel."
                 if provider == "bedrock"
                 else "Ensure Ollama is running and the model is pulled."
             )
             return [{
                 "severity": "info",
-                "line": "1",
+                "line": str(chunk_start_line),
                 "issue": f"{model_label} call failed: {exc}",
                 "recommendation": hint,
                 "source": source_label,
@@ -212,7 +356,7 @@ class UniversalReviewAgent:
             logger.warning("    %s returned non-JSON output", model_label)
             return [{
                 "severity": "info",
-                "line": "1",
+                "line": str(chunk_start_line),
                 "issue": f"{model_label} returned non-JSON output",
                 "recommendation": "Inspect the raw response or try a stronger model.",
                 "source": source_label,
@@ -440,47 +584,15 @@ class UniversalReviewAgent:
         file_name: str,
         chunking_strategy: str,
     ) -> dict:
-        chunk_start_time = time.perf_counter()
-        chunk_dict = asdict(chunk)
-        deterministic = self._run_deterministic(chunk_dict)
-        prompt = self._build_prompt(chunk_dict, deterministic)
-        provider = self._get_provider(model_id)
-        model_label = "LLM" if provider == "bedrock" else "SLM"
-
-        slm_findings = self._call_slm(model_id, prompt)
-        raw_slm_count = len(slm_findings)
-
-        slm_findings, reject_stats = self._filter_slm_findings(
-            slm_findings, chunk.start_line, chunk.end_line, chunk.code,
-        )
-        rejected_total = raw_slm_count - len(slm_findings)
-        if rejected_total > 0:
-            reject_summary = ", ".join(f"{k}={v}" for k, v in reject_stats.items() if v)
-            logger.info(
-                "    sanity filter dropped %d %s finding(s) [%s]",
-                rejected_total, model_label, reject_summary,
-            )
-
-        issues = self._merge(deterministic, slm_findings)
-        logger.info(
-            "    merged: %d total (chunk took %.2fs)",
-            len(issues),
-            time.perf_counter() - chunk_start_time,
-        )
-
-        return {
+        model_id = model_id.strip()
+        final_state = self.graph.invoke({
+            "chunk": chunk,
+            "model_id": model_id,
             "file_name": file_name,
-            "chunk_id": chunk.chunk_id,
-            "chunk_type": chunk.chunk_type,
-            "language": chunk.language,
-            "start_line": chunk.start_line,
-            "end_line": chunk.end_line,
-            "code": chunk.code,
-            "model": model_id,
             "chunking_strategy": chunking_strategy,
-            "skill": self.skill.name,
-            "issues": issues,
-        }
+            "started_at": time.perf_counter(),
+        })
+        return final_state["result"]
 
     # -------------------------------------------------------------------
     # Scoring stage — runs once after every chunk has been reviewed.

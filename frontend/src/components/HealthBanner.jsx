@@ -10,7 +10,7 @@ export default function HealthBanner({ health, activeModel }) {
       </div>
     ) : (
       <div className="ura-banner ura-banner-warn">
-        <strong>AWS Bedrock credentials not found.</strong>{" "}
+        <strong>AWS Bedrock is not fully configured.</strong>{" "}
         Set <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>,
         and <code>BEDROCK_MODEL_ID</code> in your <code>.env</code> file and restart the server.
       </div>

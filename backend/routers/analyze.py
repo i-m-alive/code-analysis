@@ -34,7 +34,7 @@ def analyze(request: AnalyzeRequest) -> dict:
     if not request.file_ids:
         raise HTTPException(status_code=400, detail="file_ids is required")
 
-    model_id = request.model_id or ACTIVE_MODEL_ID
+    model_id = (request.model_id or ACTIVE_MODEL_ID).strip()
     chunking_strategy = request.chunking_strategy or ACTIVE_CHUNKING_STRATEGY
     skill_name = request.skill or DEFAULT_SKILL
 
