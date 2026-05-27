@@ -14,7 +14,7 @@ import os
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
-from config import AWS_REGION
+from config import AWS_REGION, BEDROCK_MODEL_ID
 
 
 class BedrockError(RuntimeError):
@@ -22,10 +22,12 @@ class BedrockError(RuntimeError):
 
 
 def is_bedrock_available() -> bool:
-    """Return True if AWS credentials are present in the environment."""
+    """Return True if Bedrock has the minimum local configuration present."""
     return bool(
         os.environ.get("AWS_ACCESS_KEY_ID")
         and os.environ.get("AWS_SECRET_ACCESS_KEY")
+        and BEDROCK_MODEL_ID
+        and BEDROCK_MODEL_ID != "REPLACE_WITH_YOUR_BEDROCK_MODEL_ID"
     )
 
 
@@ -45,6 +47,7 @@ def generate(model_id: str, prompt: str, system: str | None = None) -> str:
 
     Returns the raw text from the model. Caller is responsible for parsing.
     """
+    model_id = model_id.strip()
     messages = [{"role": "user", "content": [{"text": prompt}]}]
     kwargs = {
         "modelId": model_id,
