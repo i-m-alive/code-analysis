@@ -699,6 +699,118 @@ details summary {
   color: #cbd5e1;
 }
 
+/* "Know more →" button beside the grade badge in the aspect card header */
+.ura-cat-view-btn {
+  align-self: stretch;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+  font-size: 10px;
+  padding: 0 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ura-cat-view-btn:hover {
+  background: rgba(91, 141, 255, 0.10);
+  color: var(--fg);
+  border-color: rgba(91, 141, 255, 0.5);
+}
+.ura-cat-view-btn-active {
+  background: rgba(91, 141, 255, 0.12);
+  border-color: rgba(91, 141, 255, 0.5);
+  color: #93b6ff;
+}
+
+/* Active aspect card when its issues panel is open */
+.ura-aspect-card.ura-aspect-card-active {
+  border-color: rgba(91, 141, 255, 0.5);
+  background: rgba(91, 141, 255, 0.07);
+}
+
+/* Category issues panel — sits between ScoreCard and Dashboard */
+.ura-cat-panel {
+  border-color: rgba(91, 141, 255, 0.3);
+}
+
+.ura-cat-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ura-cat-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.ura-cat-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 420px;
+}
+
+/* Category issues drill-down panel */
+.ura-cat-issues-panel {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.ura-cat-issues-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ura-cat-issues-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.ura-cat-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--bg-elev);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+}
+
+.ura-cat-correctness     { background: rgba(91,141,255,0.18); color: #93b6ff; border-color: rgba(91,141,255,0.4); }
+.ura-cat-security        { background: rgba(239,68,68,0.18); color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+.ura-cat-maintainability { background: rgba(168,85,247,0.18); color: #d8b4fe; border-color: rgba(168,85,247,0.4); }
+.ura-cat-performance     { background: rgba(249,115,22,0.18); color: #fdba74; border-color: rgba(249,115,22,0.4); }
+.ura-cat-style           { background: rgba(34,197,94,0.18); color: #86efac; border-color: rgba(34,197,94,0.4); }
+.ura-cat-uncategorized   { background: rgba(148,163,184,0.18); color: #cbd5e1; border-color: rgba(148,163,184,0.4); }
+
+.ura-cat-close {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-muted);
+  font-size: 14px;
+  padding: 2px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.ura-cat-close:hover {
+  background: var(--bg-elev);
+  color: var(--fg);
+}
+
 /* Severity × source matrix */
 .ura-matrix {
   width: 100%;
@@ -720,4 +832,233 @@ details summary {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* ── Add ▾ dropdown ──────────────────────────────────────── */
+.ura-add-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.ura-add-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 130px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ura-add-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ura-add-menu button:hover {
+  background: rgba(91, 141, 255, 0.14);
+  color: var(--accent);
+}
+
+/* ── FileUploader ─────────────────────────────────────────── */
+.ura-upload-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ura-upload-clear {
+  color: var(--fg-muted);
+  border-color: transparent;
+}
+.ura-upload-clear:hover { color: var(--fg); border-color: var(--border); }
+
+.ura-upload-preview {
+  margin: 8px 0 4px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.ura-upload-folder { margin-bottom: 8px; }
+.ura-upload-folder:last-child { margin-bottom: 0; }
+
+.ura-upload-folder-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--fg);
+}
+
+.ura-upload-file-list { padding-left: 16px !important; }
+
+/* ── FolderTreeView ───────────────────────────────────────── */
+.ura-tree { margin-top: 4px; }
+
+.ura-tree-heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Folder section */
+.ura-folder-section {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.ura-folder-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-elev-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.ura-folder-icon { font-size: 15px; flex-shrink: 0; }
+
+.ura-folder-name {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ura-folder-meta { font-size: 12px; }
+
+.ura-folder-body { padding: 6px 0; }
+
+/* File accordion */
+.ura-file-accordion {
+  border-bottom: 1px solid var(--border);
+}
+.ura-file-accordion:last-child { border-bottom: none; }
+
+.ura-file-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+.ura-file-header:hover { background: rgba(91, 141, 255, 0.07); }
+.ura-file-header.is-open { background: rgba(91, 141, 255, 0.05); }
+
+.ura-file-icon { font-size: 13px; flex-shrink: 0; }
+
+.ura-file-path {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ura-file-meta { font-size: 11px; white-space: nowrap; }
+
+.ura-file-chevron {
+  font-size: 10px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+/* Chunk list inside an open file */
+.ura-chunk-list {
+  border-top: 1px solid var(--border);
+  background: var(--bg-elev-2);
+}
+
+.ura-chunk-item { border-bottom: 1px solid var(--border); }
+.ura-chunk-item:last-child { border-bottom: none; }
+
+.ura-chunk-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 32px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+.ura-chunk-row:hover { background: rgba(91, 141, 255, 0.07); }
+.ura-chunk-row.is-open { background: rgba(91, 141, 255, 0.10); }
+
+.ura-chunk-name {
+  flex: 1;
+  font-size: 12px;
+  font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ura-chunk-lines {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ura-chunk-badge {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.ura-chunk-badge.has-issues {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.ura-chunk-chevron {
+  font-size: 10px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+/* Expanded chunk FindingsTable — compact, no outer card */
+.ura-chunk-detail { border-top: 1px solid var(--border); }
+
+.ura-findings-compact {
+  padding: 10px 16px;
+  background: var(--bg-elev);
+}
+
+.ura-findings-source {
+  margin-bottom: 8px;
+}
+
+.ura-findings-source summary {
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-size: 12px;
+  margin-bottom: 4px;
 }

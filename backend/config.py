@@ -127,15 +127,14 @@ ACTIVE_MODEL_ID = BEDROCK_MODEL_ID
 # Chunking strategies
 # ---------------------------------------------------------------------------
 # IMPORTANT: file-wise chunking is NOT supported by design.
-# All four are exposed in the UI so they can be benchmarked.
+# "comprehensive" is the default and only strategy exposed to users.
+# The others remain registered in the chunking registry for API-level
+# benchmarking but are not shown in the UI.
 SUPPORTED_CHUNKING_STRATEGIES = [
-    {"id": "function", "label": "Function-level Chunking", "active": True},
-    {"id": "fixed", "label": "Fixed-size Chunking", "active": False},
-    {"id": "class", "label": "Class-level Chunking", "active": False},
-    {"id": "semantic", "label": "Semantic Chunking", "active": False},
+    {"id": "comprehensive", "label": "Comprehensive (all chunk types)", "active": True},
 ]
 
-ACTIVE_CHUNKING_STRATEGY = "function"
+ACTIVE_CHUNKING_STRATEGY = "comprehensive"
 
 
 # ---------------------------------------------------------------------------
@@ -147,4 +146,4 @@ ACTIVE_CHUNKING_STRATEGY = "function"
 #   - architecture_review
 #   - standards_compliance
 #   - ai_detection
-DEFAULT_SKILL = "static_review"
+DEFAULT_SKILL = "static-review"

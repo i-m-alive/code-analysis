@@ -20,11 +20,6 @@ export async function getModels() {
   return data;
 }
 
-export async function getChunkingStrategies() {
-  const { data } = await client.get("/chunking-strategies");
-  return data;
-}
-
 export async function getSkills() {
   const { data } = await client.get("/skills");
   return data;
@@ -32,7 +27,12 @@ export async function getSkills() {
 
 export async function uploadFiles(files) {
   const form = new FormData();
-  for (const f of files) form.append("files", f);
+  for (const f of files) {
+    form.append("files", f);
+    // Send the relative path (e.g. "MyProject/src/utils.py") as a parallel
+    // form field so the backend can preserve folder structure in results.
+    form.append("relative_paths", f.webkitRelativePath || f.name);
+  }
   const { data } = await client.post("/upload", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });

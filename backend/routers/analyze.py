@@ -60,7 +60,11 @@ def analyze(request: AnalyzeRequest) -> dict:
         if not path.exists():
             raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
 
-        file_name, language, chunks = ingestion.ingest(path, chunking_strategy)
+        # Restore relative path stored during upload (e.g. "MyProject/src/utils.py").
+        meta_path = UPLOAD_DIR / f"{file_id}.meta"
+        relative_path = meta_path.read_text(encoding="utf-8").strip() if meta_path.exists() else None
+
+        file_name, language, chunks = ingestion.ingest(path, chunking_strategy, relative_path=relative_path)
         logger.info(
             "[%d/%d] %s | %s | %d chunks via %s",
             file_idx,

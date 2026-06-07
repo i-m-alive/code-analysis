@@ -1,4 +1,4 @@
-export default function Header({ activeModel, activeStrategy, activeSkill }) {
+export default function Header({ activeModel, activeSkill }) {
   return (
     <header className="ura-header">
       <div>
@@ -9,7 +9,6 @@ export default function Header({ activeModel, activeStrategy, activeSkill }) {
       </div>
       <div className="ura-active-meta">
         <span className="chip">Model: {activeModel || "—"}</span>
-        <span className="chip">Chunking: {activeStrategy || "—"}</span>
         <span className="chip">Skill: {activeSkill || "—"}</span>
       </div>
     </header>

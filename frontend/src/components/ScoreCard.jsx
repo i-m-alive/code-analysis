@@ -37,7 +37,7 @@ function severitySummary(sev) {
     .join(" · ") || "none";
 }
 
-export default function ScoreCard({ scoring }) {
+export default function ScoreCard({ scoring, selectedCategory, onSelectCategory }) {
   if (!scoring || !scoring.overall) return null;
 
   const { overall, aspects = [], metadata = {} } = scoring;
@@ -60,12 +60,20 @@ export default function ScoreCard({ scoring }) {
 
       <div className="ura-aspect-grid">
         {aspects.map((a) => (
-          <div key={a.name} className="ura-aspect-card">
+          <div key={a.name} className={`ura-aspect-card${selectedCategory === a.name ? " ura-aspect-card-active" : ""}`}>
             <div className="ura-aspect-header">
               <h4>{a.name}</h4>
-              <span className={gradeClass(a.grade) + " ura-grade-mini"}>
-                {a.grade}
-              </span>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span className={gradeClass(a.grade) + " ura-grade-mini"}>
+                  {a.grade}
+                </span>
+                <button
+                  className={`ura-cat-view-btn${selectedCategory === a.name ? " ura-cat-view-btn-active" : ""}`}
+                  onClick={() => onSelectCategory?.(a.name)}
+                >
+                  {selectedCategory === a.name ? "✕ Close" : "Know more →"}
+                </button>
+              </div>
             </div>
 
             <div className="ura-aspect-score-row">

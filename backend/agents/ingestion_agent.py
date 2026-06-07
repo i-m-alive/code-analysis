@@ -28,12 +28,17 @@ class IngestionAgent:
         self,
         file_path: Path,
         chunking_strategy: str,
+        relative_path: str = None,
     ) -> tuple[str, str, List[CodeChunk]]:
         """
         Returns: (file_name, language, chunks)
+
+        relative_path, when provided, is used as file_name so that folder
+        structure (e.g. "MyProject/src/utils.py") is preserved in results.
         """
-        file_name = file_path.name
-        language = detect_language(file_name)
+        file_name = relative_path or file_path.name
+        basename = Path(file_name).name
+        language = detect_language(basename)
         source = read_text(file_path)
         line_count = len(source.splitlines())
         logger.debug(

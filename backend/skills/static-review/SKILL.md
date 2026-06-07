@@ -1,3 +1,8 @@
+---
+name: static-review
+description: Performs deterministic static analysis on code using rule-based scripts for naming, complexity, formatting, unused imports, dead code, and code smells — then uses an LLM to refine findings, add reasoning, and emit structured JSON output.
+---
+
 # Static Review Skill
 
 ## Purpose

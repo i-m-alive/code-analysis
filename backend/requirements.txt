@@ -9,3 +9,16 @@ langchain-core>=0.3.0
 langchain-ollama>=0.2.0
 langchain-aws>=0.2.0
 langgraph>=0.2.0
+# Tree-sitter — real CST parsing for all supported languages
+tree-sitter>=0.22.0
+tree-sitter-python
+tree-sitter-javascript
+tree-sitter-typescript
+tree-sitter-java
+tree-sitter-go
+tree-sitter-ruby
+tree-sitter-c-sharp
+tree-sitter-cpp
+tree-sitter-c
+tree-sitter-rust
+tree-sitter-bash

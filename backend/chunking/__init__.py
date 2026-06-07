@@ -6,21 +6,25 @@ Exposes a single factory: get_chunker(strategy_id).
 IMPORTANT: file-wise chunking is intentionally NOT implemented.
 All four strategies — function, fixed, class, semantic — are registered
 so the UI can offer them in a dropdown and we can benchmark them.
+
+All strategies are backed by TreeSitterChunker, which uses real CST parsing
+for every supported language and falls back to fixed-window splitting when
+a grammar package is not installed.
 """
 
-from chunking.class_chunker import ClassChunker
-from chunking.fixed_chunker import FixedChunker
-from chunking.function_chunker import FunctionChunker
-from chunking.semantic_chunker import SemanticChunker
+from functools import partial
+
+from chunking.tree_sitter_chunker import TreeSitterChunker
 
 _REGISTRY = {
-    "function": FunctionChunker,
-    "fixed": FixedChunker,
-    "class": ClassChunker,
-    "semantic": SemanticChunker,
+    "comprehensive": partial(TreeSitterChunker, strategy="comprehensive"),
+    "function":      partial(TreeSitterChunker, strategy="function"),
+    "fixed":         partial(TreeSitterChunker, strategy="fixed"),
+    "class":         partial(TreeSitterChunker, strategy="class"),
+    "semantic":      partial(TreeSitterChunker, strategy="semantic"),
 }
 
 
 def get_chunker(strategy_id: str):
-    chunker_cls = _REGISTRY.get(strategy_id, FunctionChunker)
-    return chunker_cls()
+    factory = _REGISTRY.get(strategy_id, partial(TreeSitterChunker, strategy="comprehensive"))
+    return factory()
